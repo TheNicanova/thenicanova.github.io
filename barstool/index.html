@@ -40,8 +40,8 @@
 	  <p>With the following receivers</p>
 	  <ul>
 	    <li data-ng-repeat="x in receiversArray">
-		<button style = 'background-color: #E3E1B8' ng-click="toggle({{ $index }})">
-		{{ x }}
+		<button ng-click="receiversShow[$index] = !receiversShow[$index]">
+		{{ x }} {{receiversShow[$index] }}
 		</button>
 
 	    </li>
