@@ -26,8 +26,8 @@ angular.module('state', ['btford.socket-io'])
  
     $scope.selectReceiver = function() {
       $scope.show = { transmitter: false, receiver: true, events: false };
-      $scope.tabclass = { transmitter: 'tab', receiver: 'selected-tab',
                           events: 'tab' };
+      $scope.tabclass = { transmitter: 'tab', receiver: 'selected-tab',
     }
  
     $scope.selectEvents = function() {
@@ -117,6 +117,7 @@ angular.module('state', ['btford.socket-io'])
       $scope.setReceiverUrl = setReceiverUrl;
       $scope.rssiSamples = {};
       $scope.receiversArray = [];
+      $scope.drawnReceivers = []
       $scope.rssiSeconds = 0;
  
       setTransmitterUrl();
@@ -165,6 +166,12 @@ angular.module('state', ['btford.socket-io'])
  
     function setTransmitterUrl() {
       Samples.setUrl($scope.apiRoot + WHEREIS_QUERY + $scope.transmitterId);
+      $scope.rssiSamples = {};
+      $scope.receiversArray = [];
+      $scope.rssiSeconds = 0;
+      $scope.shouldRedraw = true;
+      $scope.drawnReceivers = [];
+
     } // TODO: should call setTransmitterUrl, not setUrl
  
     function setReceiverUrl() {
@@ -176,7 +183,7 @@ angular.module('state', ['btford.socket-io'])
       var sample = Samples.getLatest();
  
       updateReceiversArray(sample);
-      updateRssiArray(sample)
+      updateRssiArray(sample);
   
       $scope.rssiSeconds += REFRESH_SECONDS;
     }
@@ -195,18 +202,28 @@ angular.module('state', ['btford.socket-io'])
         function(scope, elem, attrs) {
           var exp = $parse(attrs.chartData);
           var dataToPlot = exp(scope);
-          var drawnReceivers = [];
           var padding = 20;
           var xScale, yScale, xAxisGen, yAxisGen, lineFun;
           var d3 = $window.d3;
           var rawSvg = elem.find('svg');
           var svg = d3.select(rawSvg[0]);
+
  
           scope.$watch(exp, function(newVal, oldVal) {
  
             dataToPlot = newVal;
+
+            if(scope.shouldRedraw === true) {
+              svg.selectAll("*").remove();
+              drawLineChart();
+              scope.shouldRedraw = false;
+            }
+
             drawReceivers();
             redrawLineChart();
+
+
+
           }, true);
  
           function setChartParameters() {
@@ -245,7 +262,7 @@ angular.module('state', ['btford.socket-io'])
             for(var cReceiver = 0; cReceiver < scope.receiversArray.length; cReceiver++) {
               var receiverTemp = scope.receiversArray[cReceiver];
  
-              if(drawnReceivers.indexOf(receiverTemp) === -1) {
+              if(scope.drawnReceivers.indexOf(receiverTemp) === -1) {
                 console.log('Drawing the line of receiver : ' + receiverTemp);
                 svg.append("svg:path")
                     .attr({
@@ -254,7 +271,7 @@ angular.module('state', ['btford.socket-io'])
                       "stroke-width": 2,
                       "fill": "none",
                       "class": 'path_' + receiverTemp});
-                drawnReceivers.push(receiverTemp);
+                scope.drawnReceivers.push(receiverTemp);
               }
  
             }
