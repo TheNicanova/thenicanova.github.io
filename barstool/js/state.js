@@ -1,4 +1,3 @@
-
 REFRESH_SECONDS = 1;
 MAX_NUMBER_OF_EVENTS = 10;
 MAX_NUMBER_OF_SAMPLES = 10;
@@ -118,8 +117,14 @@ angular.module('state', ['btford.socket-io'])
       $scope.rssiSamples = {};
       $scope.receiversArray = [];
       $scope.receiversShow = [];
-      $scope.drawnReceivers = []
+      $scope.receiversColor = [];
+      $scope.minRSSI = 125;
+      $scope.maxRSSI = 200;
+      $scope.drawnReceivers = [];
+      $scope.pause = false;
+      $scope.discoverReceivers = true;
       $scope.rssiSeconds = 0;
+
  
       setTransmitterUrl();
  
@@ -138,6 +143,7 @@ angular.module('state', ['btford.socket-io'])
             if($scope.receiversArray.indexOf(receiverTemp) === -1) {
               $scope.receiversArray.push(receiverTemp);
               $scope.receiversShow.push(true);
+              $scope.receiversColor.push(rainbow(DEFAULT_MAX_COLORS, $scope.receiversColor.length % DEFAULT_MAX_COLORS));
               $scope.rssiSamples[receiverTemp] = [];
             }
           }
@@ -186,12 +192,35 @@ angular.module('state', ['btford.socket-io'])
     function setReceiverUrl() {
       Samples.setUrl($scope.apiRoot + WHATAT_QUERY + $scope.receiverId);
     } // TODO: should call setReceiverUrl, not setUrl
+
+    function rainbow(numOfSteps, step) {
+    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
+    // Adam Cole, 2011-Sept-14
+    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+      var r, g, b;
+      var h = step / numOfSteps;
+      var i = ~~(h * 6);
+      var f = h * 6 - i;
+      var q = 1 - f;
+      switch(i % 6){
+        case 0: r = 1; g = f; b = 0; break;
+        case 1: r = q; g = 1; b = 0; break;
+        case 2: r = 0; g = 1; b = f; break;
+        case 3: r = 0; g = q; b = 1; break;
+        case 4: r = f; g = 0; b = 1; break;
+        case 5: r = 1; g = 0; b = q; break;
+      }
+      var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+      return (c);
+    }
  
     function update() {
  
       var sample = Samples.getLatest();
- 
-      updateReceiversArray(sample);
+      
+      if($scope.discoverReceivers) {
+        updateReceiversArray(sample);
+      }
       updateRssiArray(sample);
   
       $scope.rssiSeconds += REFRESH_SECONDS;
@@ -203,7 +232,7 @@ angular.module('state', ['btford.socket-io'])
  
  
   // Linear Chart directive
-  .directive('linearChart', function($parse, $window){
+  .directive('linearChart',  function($parse, $window){
     return {
       restrict: "EA",
       template: "<svg width='1000' height='300'></svg>",
@@ -217,21 +246,25 @@ angular.module('state', ['btford.socket-io'])
           var rawSvg = elem.find('svg');
           var svg = d3.select(rawSvg[0]);
 
+            //var sample = Samples.getLatest();
+            //console.log(JSON.stringify(sample, null, 4));
  
           scope.$watch(exp, function(newVal, oldVal) {
  
-            dataToPlot = newVal;
+            if(!scope.pause) {
+              console.log('updating data');
+              dataToPlot = newVal;
+              
+              if(scope.shouldRedraw === true) {
+                svg.selectAll("*").remove();
+                drawLineChart();
+                scope.shouldRedraw = false;
+              }
 
-            if(scope.shouldRedraw === true) {
-              svg.selectAll("*").remove();
-              drawLineChart();
-              scope.shouldRedraw = false;
+              drawReceivers();
+              redrawLineChart();
+
             }
-
-            drawReceivers();
-            redrawLineChart();
-
-
 
           }, true);
  
@@ -246,7 +279,7 @@ angular.module('state', ['btford.socket-io'])
               .range([padding + 5, rawSvg.attr("width") - padding]);
  
             yScale = d3.scale.linear()
-              .domain([125, 200])
+              .domain([scope.minRSSI, scope.maxRSSI])
               .range([rawSvg.attr("height") - padding, 0]);
  
             xAxisGen = d3.svg.axis()
@@ -265,18 +298,32 @@ angular.module('state', ['btford.socket-io'])
               .interpolate("basis");
           }
          
+
  
           function drawReceivers() {
  
             for(var cReceiver = 0; cReceiver < scope.receiversArray.length; cReceiver++) {
               var receiverTemp = scope.receiversArray[cReceiver];
- 
+              
+              if(scope.receiversShow[cReceiver] === false) {
+                 svg.selectAll("." + 'path_' + receiverTemp).remove();
+              }
+              else {
+                svg.append("svg:path")
+                    .attr({
+                      d: lineFun(dataToPlot[receiverTemp]),
+                      "stroke": scope.receiversColor[cReceiver],
+                      "stroke-width": 2,
+                      "fill": "none",
+                      "class": 'path_' + receiverTemp});
+
+              }
               if(scope.drawnReceivers.indexOf(receiverTemp) === -1) {
                 console.log('Drawing the line of receiver : ' + receiverTemp);
                 svg.append("svg:path")
                     .attr({
                       d: lineFun(dataToPlot[receiverTemp]),
-                      "stroke": rainbow(DEFAULT_MAX_COLORS, cReceiver % DEFAULT_MAX_COLORS),
+                      "stroke": scope.receiversColor[cReceiver],
                       "stroke-width": 2,
                       "fill": "none",
                       "class": 'path_' + receiverTemp});
@@ -317,172 +364,9 @@ angular.module('state', ['btford.socket-io'])
               .attr({ d: lineFun(dataToPlot[receiverTemp]) }); 
             }
           }
- 
-          function rainbow(numOfSteps, step) {
-            // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
-            // Adam Cole, 2011-Sept-14
-            // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
-            var r, g, b;
-            var h = step / numOfSteps;
-            var i = ~~(h * 6);
-            var f = h * 6 - i;
-            var q = 1 - f;
-            switch(i % 6){
-              case 0: r = 1; g = f; b = 0; break;
-              case 1: r = q; g = 1; b = 0; break;
-              case 2: r = 0; g = 1; b = f; break;
-              case 3: r = 0; g = q; b = 1; break;
-              case 4: r = f; g = 0; b = 1; break;
-              case 5: r = 1; g = 0; b = q; break;
-            }
-            var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
-            return (c);
-          }
- 
+
         drawLineChart();
  
         }
-     };
-  })
-
-// Linear Chart directive
-  .directive('barChart', function($parse, $window){
-    return {
-      restrict: "EA",
-      template: "<svg width='1000' height='300'></svg>",
-      link:
-        function(scope, elem, attrs) {
-          var exp = $parse(attrs.chartData);
-          var dataToPlot = exp(scope);
-          var padding = 20;
-          var xScale, yScale, xAxisGen, yAxisGen, lineFun;
-          var d3 = $window.d3;
-          var rawSvg = elem.find('svg');
-          var svg = d3.select(rawSvg[0]);
-
- 
-          scope.$watch(exp, function(newVal, oldVal) {
- 
-            dataToPlot = newVal;
-
-            if(scope.shouldRedraw === true) {
-              svg.selectAll("*").remove();
-              drawLineChart();
-              scope.shouldRedraw = false;
-            }
-
-            drawReceivers();
-            redrawLineChart();
-
-
-
-          }, true);
- 
-          function setChartParameters() {
- 
-            var beginDomain = Math.max(1, scope.rssiSeconds - MAX_NUMBER_OF_SAMPLES );
-            var endDomain = Math.max(0,scope.rssiSeconds - 1);
-
-            console.log('Domain ranging from ' + beginDomain + ' to ' + endDomain);
-            xScale = d3.scale.linear()
-              .domain([beginDomain,endDomain])
-              .range([padding + 5, rawSvg.attr("width") - padding]);
- 
-            yScale = d3.scale.linear()
-              .domain([150, 200])
-              .range([rawSvg.attr("height") - padding, 0]);
- 
-            xAxisGen = d3.svg.axis()
-              .scale(xScale)
-              .orient("bottom")
-              .ticks(endDomain - beginDomain - 1);
- 
-            yAxisGen = d3.svg.axis()
-              .scale(yScale)
-              .orient("left")
-              .ticks(8);
- 
-            lineFun = d3.svg.line()
-              .x(function(d) { return xScale(d.seconds); })
-              .y(function(d) { return yScale(d.rssi); })
-              .interpolate("basis");
-          }
-         
- 
-          function drawReceivers() {
- 
-            for(var cReceiver = 0; cReceiver < scope.receiversArray.length; cReceiver++) {
-              var receiverTemp = scope.receiversArray[cReceiver];
- 
-              if(scope.drawnReceivers.indexOf(receiverTemp) === -1) {
-                console.log('Drawing the line of receiver : ' + receiverTemp);
-                svg.append("svg:path")
-                    .attr({
-                      d: lineFun(dataToPlot[receiverTemp]),
-                      "stroke": rainbow(DEFAULT_MAX_COLORS, cReceiver % DEFAULT_MAX_COLORS),
-                      "stroke-width": 2,
-                      "fill": "none",
-                      "class": 'path_' + receiverTemp});
-                scope.drawnReceivers.push(receiverTemp);
-              }
- 
-            }
-          }
- 
- 
-          function drawLineChart() {
- 
-            setChartParameters();
- 
-            svg.append("svg:g")
-              .attr("class", "x axis")
-              .attr("transform", "translate(9,270)")
-              .call(xAxisGen);
- 
-            svg.append("svg:g")
-              .attr("class", "y axis")
-              .attr("transform", "translate(40,-10)")
-              .call(yAxisGen);
- 
-          }
- 
-          function redrawLineChart() {
- 
-            setChartParameters();
- 
-            svg.selectAll("g.y.axis").call(yAxisGen);
-            svg.selectAll("g.x.axis").call(xAxisGen);
-            
-            for(var cReceiver = 0; cReceiver < scope.receiversArray.length; cReceiver++) {
-              var receiverTemp = scope.receiversArray[cReceiver];
-              svg.selectAll("." + 'path_' + receiverTemp)
-              .attr({ d: lineFun(dataToPlot[receiverTemp]) });
-            }
-          }
- 
-          function rainbow(numOfSteps, step) {
-            // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
-            // Adam Cole, 2011-Sept-14
-            // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
-            var r, g, b;
-            var h = step / numOfSteps;
-            var i = ~~(h * 6);
-            var f = h * 6 - i;
-            var q = 1 - f;
-            switch(i % 6){
-              case 0: r = 1; g = f; b = 0; break;
-              case 1: r = q; g = 1; b = 0; break;
-              case 2: r = 0; g = 1; b = f; break;
-              case 3: r = 0; g = q; b = 1; break;
-              case 4: r = f; g = 0; b = 1; break;
-              case 5: r = 1; g = 0; b = q; break;
-            }
-            var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
-            return (c);
-          }
- 
-        drawLineChart();
- 
-        }
-     };
+     }
   });
