@@ -31,7 +31,12 @@
             <input type="text" ng-model="apiRoot" size="30"/>
             &nbsp; Transmitter ID: &nbsp;
             <input type="text" ng-model="transmitterId" size="16"/>
+            From Min rssi of 
+	    <input type="text" ng-model="minRSSI" size="16" />
+            to Max rssi of
+	    <input type="text" ng-model="maxRSSI" size="16" />
             <button ng-click="setTransmitterUrl()">Update</button>
+            <button ng-click="setTransmitterUrl()">Reset</button>
           </form>
           <h1>RSSI in Time</h1>
           <p> Tracking {{transmitterId}} </p> 
@@ -40,11 +45,19 @@
 	  <p>With the following receivers</p>
 	  <ul>
 	    <li data-ng-repeat="x in receiversArray">
-		<button ng-click="receiversShow[$index] = !receiversShow[$index]">
-		{{ x }} {{receiversShow[$index] }}
+		<button style ="background-color:{{receiversColor[$index]}}"  ng-click="receiversShow[$index] = !receiversShow[$index]">
+		{{ x }} _{{ rssiSamples[x][rssiSamples[x].length-1].rssi }}_ {{receiversShow[$index] }}
 		</button>
 
 	    </li>
+	    <button ng-click="discoverReceivers = !discoverReceivers">
+	    Discover Receivers {{discoverReceivers}}
+            </button>
+
+	    <button ng-click="pause = !pause">
+	    Pause {{pause}}
+            </button>
+
 	  </ul>
 
 
