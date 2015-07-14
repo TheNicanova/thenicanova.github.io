@@ -1,5 +1,4 @@
 REFRESH_SECONDS = 1;
-HANDLING_ASYNC = 2;
 MAX_NUMBER_OF_EVENTS = 10;
 WHEREIS_QUERY = '/whereis/transmitter/';
 WHATAT_QUERY = '/whatat/receiver/';
@@ -7,7 +6,12 @@ DEFAULT_API_ROOT = 'http://www.hyperlocalcontext.com/';
 DEFAULT_TRANSMITTER_ID = '5c313e5234dc';
 DEFAULT_RECEIVER_ID = '001bc50940810074';
 DEFAULT_SOCKET_URL = DEFAULT_API_ROOT + '/websocket';
-DEFAULT_MAX_COLORS = 8;
+cCOlOR = 0;
+DEFAULT_COLORS_ARRAY = ['#0770a2',
+                        '#ff6900',
+                        '#aec844',
+                        '#5a5a5a',
+                        '#ffc712'];
  
  
  
@@ -18,8 +22,10 @@ angular.module('state', ['btford.socket-io'])
   .controller("InteractionCtrl", function($scope) {
  
     //Used to communicate between tabs
-    $scope.updateReceiverFromTransmitter = false;
     $scope.updateTransmitterFromReceiver = false;
+    var newTransmitterId = '5c313e5234dc';
+    $scope.setNewTransmitterId = function(newVal) {newTransmitterId = newVal;}
+    $scope.getNewTransmitterId = function() {return newTransmitterId;}
  
     $scope.show = { transmitter: true, receiver: false, events: false };
     $scope.tabclass = { transmitter: 'selected-tab', receiver: 'tab',
@@ -118,12 +124,12 @@ angular.module('state', ['btford.socket-io'])
       // Context
       $scope.apiRoot = DEFAULT_API_ROOT;
       $scope.transmitterId = DEFAULT_TRANSMITTER_ID;
-      //$scope.setReceiverUrl = setReceiverUrl;
+
  
       // Data
-      $scope.rssiSeconds = 0;
       $scope.rssiSamples = {};
- 
+      $scope.rssiSeconds = 0;
+       
       // Meta-Data
       $scope.receivers = {};
       $scope.numReceivers = 0;
@@ -133,12 +139,15 @@ angular.module('state', ['btford.socket-io'])
       $scope.minRSSI = 125;
       $scope.maxRSSI = 200;
       $scope.isPaused = false;
+      $scope.maxNumberOfSamplesAccessible = 10;
       $scope.maxNumberOfSamples = 10;
       $scope.updateChart = true; // Each time this value changes, the chart is being updated.
- 
       
-      $interval(updateFromService , REFRESH_SECONDS * 1000);
- 
+      $scope.$watch($scope.getNewTransmitterId, function() {
+        $scope.transmitterId = $scope.getNewTransmitterId();
+        $scope.updateFromUser();
+      });
+
       function updateFromService() {
    
         var sample = transmitterSamples.getLatest(); // Getting the latest data.
@@ -153,14 +162,13 @@ angular.module('state', ['btford.socket-io'])
           $scope.rssiSeconds += REFRESH_SECONDS; // Updating the data model.
  
         }
- 
+
         if(!$scope.isPaused) {
           for(var receiverTemp in $scope.receivers) {
             var indexOfLatest = $scope.rssiSamples[receiverTemp].length -1;
             $scope.receivers[receiverTemp].latest = $scope.rssiSamples[receiverTemp][indexOfLatest].rssi;
           }
         }
- 
       }
  
       $scope.updateFromUser = function () {
@@ -168,6 +176,7 @@ angular.module('state', ['btford.socket-io'])
         $scope.updateChart = !$scope.updateChart;
  
         transmitterSamples.setUrl($scope.apiRoot + WHEREIS_QUERY + $scope.transmitterId);
+        $scope.maxNumberOfSamples = $scope.maxNumberOfSamplesAccessible;
         $scope.rssiSamples = {};
         $scope.receivers = {};
         $scope.numReceivers = 0;
@@ -179,7 +188,7 @@ angular.module('state', ['btford.socket-io'])
           for(var cRadio = 0; cRadio <  sample[$scope.transmitterId].radioDecodings.length; cRadio++) {
             var receiverTemp = sample[$scope.transmitterId].radioDecodings[cRadio].identifier.value;
             if(!(receiverTemp in $scope.receivers)) {
-              var colorTemp = rainbow(DEFAULT_MAX_COLORS, $scope.numReceivers++ % DEFAULT_MAX_COLORS)
+              var colorTemp = DEFAULT_COLORS_ARRAY[cCOlOR++ % DEFAULT_COLORS_ARRAY.length];
               $scope.receivers[receiverTemp] = {color : colorTemp, isDrawn : false, isDisplayed : true, latest : 0, receiverId : receiverTemp}
             }
           }
@@ -229,29 +238,8 @@ angular.module('state', ['btford.socket-io'])
         }   
     }
  
-    function rainbow(numOfSteps, step) {
-    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
-    // Adam Cole, 2011-Sept-14
-    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
-      var r, g, b;
-      var h = step / numOfSteps;
-      var i = ~~(h * 6);
-      var f = h * 6 - i;
-      var q = 1 - f;
-      switch(i % 6){
-        case 0: r = 1; g = f; b = 0; break;
-        case 1: r = q; g = 1; b = 0; break;
-        case 2: r = 0; g = 1; b = f; break;
-        case 3: r = 0; g = q; b = 1; break;
-        case 4: r = f; g = 0; b = 1; break;
-        case 5: r = 1; g = 0; b = q; break;
-      }
-      var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
-      return (c);
-    }
- 
-    $scope.updateFromUser();
- 
+    $interval(updateFromService , REFRESH_SECONDS * 1000);
+
   }])
  
  
@@ -455,16 +443,13 @@ angular.module('state', ['btford.socket-io'])
       // Context
       $scope.apiRoot = DEFAULT_API_ROOT;
       $scope.receiverId = DEFAULT_RECEIVER_ID;
-      //$scope.setReceiverUrl = setReceiverUrl;
  
       // Data
-      $scope.rssiSeconds = 0;
       $scope.rssiSamples = {};
       $scope.displayData = {};
  
       // Meta-Data
       $scope.transmitters = {};
-      $scope.numTransmitters= 0;
  
       // Accessible to the User. Display preference.
       $scope.isDiscovering = true;
@@ -472,9 +457,7 @@ angular.module('state', ['btford.socket-io'])
       $scope.maxNumberOfSamplesAccessible = 10;
       $scope.maxNumberOfSamples = 10;
       $scope.updateChart = true; // Each time this value changes, the chart is being updated.
-      receiverSamples.setUrl($scope.apiRoot + WHATAT_QUERY + $scope.receiverId);
-      
-      $interval(updateFromService , REFRESH_SECONDS * 1000);
+            
  
       function updateFromService() {
  
@@ -484,7 +467,6 @@ angular.module('state', ['btford.socket-io'])
           updateTransmitters(sample);
         }
         updateRssiSamples(sample);
-        console.log(JSON.stringify($scope.rssiSamples, null, 4));
         updateDisplayData();
  
       }
@@ -534,7 +516,6 @@ angular.module('state', ['btford.socket-io'])
             for(var cRadio = 0; cRadio < sample[transmitterTemp].radioDecodings.length; cRadio++) {
               var radioDecodingReceiver = sample[transmitterTemp].radioDecodings[cRadio].identifier.value;
               if(radioDecodingReceiver === $scope.receiverId) {
-                console.log("Found it at " + cRadio);
                 var rssi = sample[transmitterTemp].radioDecodings[cRadio].rssi;
                 $scope.rssiSamples[transmitterTemp].push(rssi);
                 updated = true;
@@ -544,7 +525,6 @@ angular.module('state', ['btford.socket-io'])
           }
           
           else {
-            console.log('In up!')
             $scope.rssiSamples[transmitterTemp].push(0);
           }
  
@@ -566,7 +546,9 @@ angular.module('state', ['btford.socket-io'])
   
         return Math.round(sum/num);
       }
- 
+
+      $interval(updateFromService , REFRESH_SECONDS * 1000);
+      $scope.updateFromUser();
   }])
  
   .directive('barChart',  function($parse, $window) {
@@ -652,9 +634,6 @@ angular.module('state', ['btford.socket-io'])
       
           function updateChart() {
  
-            console.log(JSON.stringify(scope.transmitter, null, 4));
-            console.log(JSON.stringify(sortedData, null, 4));
- 
             svg.selectAll("rect").remove();
             svg.selectAll(".transmitter").remove();
  
@@ -671,7 +650,10 @@ angular.module('state', ['btford.socket-io'])
             })
             .attr("height", (w / 2) / sortedData.length - 3)
             .attr("fill", "#0770a2")
-            .on('click',scope.selectTransmitter)
+            .on('click',function(d,i) {
+              scope.selectTransmitter();
+              scope.setNewTransmitterId(sortedData[i].transmitter);
+            })
             .append("svg:title")
             .text(function (d) { return d.average; });
             
@@ -690,7 +672,10 @@ angular.module('state', ['btford.socket-io'])
             })
             .attr("height", (w / 2) / sortedData.length - 3)
             .attr("fill", "#ff6900")
-            .on('click',scope.selectTransmitter)
+            .on('click',function(d,i) {
+              scope.selectTransmitter();
+              scope.setNewTransmitterId(sortedData[i].transmitter);
+            })
             .append("svg:title")
             .text(function (d) { return d.latest; });
             
