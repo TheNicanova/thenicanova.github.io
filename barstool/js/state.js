@@ -23,7 +23,7 @@ angular.module('state', ['btford.socket-io'])
  
     //Used to communicate between tabs
     $scope.updateTransmitterFromReceiver = false;
-    var newTransmitterId = '5c313e5234dc';
+    var newTransmitterId = DEFAULT_TRANSMITTER_ID;
     $scope.setNewTransmitterId = function(newVal) {newTransmitterId = newVal;}
     $scope.getNewTransmitterId = function() {return newTransmitterId;}
  
@@ -255,7 +255,7 @@ angular.module('state', ['btford.socket-io'])
           var updateChartExp = $parse(attrs.updateChart);
  
           var dataToPlot = chartDataExp(scope);
-          var padding = 20;
+          var padding = 30;
           var xScale; // Dynamic
           var yScale, xAxisGen, yAxisGen, lineFun; // Static
           var d3 = $window.d3;
@@ -291,11 +291,11 @@ angular.module('state', ['btford.socket-io'])
  
             xScale = d3.scale.linear()
               .domain([0,1])
-              .range([padding + 5, rawSvg.attr("width") - padding]);
+              .range([padding + 10, rawSvg.attr("width") - padding]);
  
             yScale = d3.scale.linear()
               .domain([scope.minRSSI, scope.maxRSSI])
-              .range([rawSvg.attr("height") - padding, 0]);
+              .range([rawSvg.attr("height") - padding, padding]);
  
             xAxisGen = d3.svg.axis()
               .scale(xScale)
@@ -314,12 +314,12 @@ angular.module('state', ['btford.socket-io'])
  
             svg.append("svg:g")
               .attr("class", "x axis")
-              .attr("transform", "translate(9,270)")
+              .attr("transform", "translate(10,270)")
               .call(xAxisGen);
  
             svg.append("svg:g")
               .attr("class", "y axis")
-              .attr("transform", "translate(40,-10)")
+              .attr("transform", "translate(40,0)")
               .call(yAxisGen);
  
           }
@@ -330,7 +330,7 @@ angular.module('state', ['btford.socket-io'])
  
             yScale = d3.scale.linear()
               .domain([scope.minRSSI, scope.maxRSSI])
-              .range([rawSvg.attr("height") - padding, 0]);
+              .range([rawSvg.attr("height") - padding , padding]);
  
             yAxisGen = d3.svg.axis()
               .scale(yScale)
@@ -344,12 +344,12 @@ angular.module('state', ['btford.socket-io'])
             
             svg.append("svg:g")
               .attr("class", "x axis")
-              .attr("transform", "translate(9,270)")
+              .attr("transform", "translate(10,270)")
               .call(xAxisGen);
  
             svg.append("svg:g")
               .attr("class", "y axis")
-              .attr("transform", "translate(40,-10)")
+              .attr("transform", "translate(40,0)")
               .call(yAxisGen);
           }  
  
@@ -359,7 +359,7 @@ angular.module('state', ['btford.socket-io'])
  
             xScale = d3.scale.linear()
               .domain([beginDomain,endDomain])
-              .range([padding + 5, rawSvg.attr("width") - padding]);
+              .range([padding, rawSvg.attr("width") - padding]);
  
             xAxisGen = d3.svg.axis()
               .scale(xScale)
