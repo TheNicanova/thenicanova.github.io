@@ -16,7 +16,7 @@ DEFAULT_COLORS_ARRAY = ['#0770a2',
  
  
  
-angular.module('state', ['btford.socket-io'])
+angular.module('state', ['ui.bootstrap','btford.socket-io'])
  
   // ----- Interaction controller -----
   .controller("InteractionCtrl", function($scope) {
@@ -27,6 +27,9 @@ angular.module('state', ['btford.socket-io'])
     $scope.setNewTransmitterId = function(newVal) {newTransmitterId = newVal;}
     $scope.getNewTransmitterId = function() {return newTransmitterId;}
  
+
+    $scope.hideme = true;
+    
     $scope.show = { transmitter: true, receiver: false, events: false };
     $scope.tabclass = { transmitter: 'selected-tab', receiver: 'tab',
                         events: 'tab' };
