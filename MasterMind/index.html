@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML>
    <HEAD>
-      <TITLE>Play Mastermind Game Online</TITLE>
+      <TITLE>Test guessing strategies</TITLE>
       <meta content="text/html; charset=utf-8" http-equiv="content-type">
       <link rel="stylesheet" type="text/css" href="css/default.css">
       <link rel="stylesheet" type="text/css" href="css/mm.css">
@@ -30,15 +30,53 @@
       var entropy = [];
       var tries = [];
 
+      var randomStrategy = true;
+      var entropyGreedy = false;
+      var entropyConsistent = false;
+      var entropyNegative = false;
+
       window.onload = function () {
         source = document.getElementById('main_table');
         destination = document.getElementById('main_table');
         copy = source.cloneNode(true);
         copy.setAttribute('id', 'main_table');
+        initGame();
         
       };
       
 
+
+      function setStrategy(strategy) {
+
+        if(strategy == 1) {
+          randomStrategy = true;
+          entropyGreedy = false;
+          entropyConsistent = false;
+          entropyNegative = false;
+        }
+
+        if(strategy == 2) {
+          randomStrategy = false;
+          entropyGreedy = true;
+          entropyConsistent = false;
+          entropyNegative = false;
+        }
+
+        if(strategy == 3) {
+          randomStrategy = false;
+          entropyGreedy = false;
+          entropyConsistent = true;
+          entropyNegative = false;
+        }
+
+        if(strategy == 4) {
+          randomStrategy = false;
+          entropyGreedy = false;
+          entropyConsistent = false;
+          entropyNegative = true;
+        }
+
+      }
 
       function initGame(){
         currentRow = 9;
@@ -50,10 +88,11 @@
       }
 
       function solve() {
+      alert("Starting the benchmarking, it might take some time...");
       initGame();
       var j = 1;
       var k = 1;
-        for(var i = 0; i < 200; i++) {
+        for(var i = 0; i < 100; i++) {
 
           while(proceed(true) == 0) {
             j++;
@@ -64,23 +103,34 @@
           k = 0;
           initGame();
         }
+        alert("To solve the game 100 times, it took : " + j + " guesses \n With an average of " + computeAverage(tries) + "\n A variance of : " + computeVariance(tries, computeAverage(tries)) + "\nQueries have : " + computeAverage(entropy) + " entropy on average.\n" + "And a variance of : " + computeVariance(entropy, computeAverage(entropy)));
 
-        console.log("To solve the game 100 times, it took : " + j + "guesses");
-        console.log("With an average of " + computeAverage(tries));
-        console.log("A variance of : " + computeVariance(tries, computeAverage(tries)));
-        console.log("Queries have : " + computeAverage(entropy) + " entropy on average.");
-        console.log("And a variance of : " + computeVariance(entropy, computeAverage(entropy)));
+ 
+    
+ 
+
         //console.log(tries);
       }
 
 
       function proceed(noDisplay) {
 
-        bestGuest = guessLessEntropy(remainingHypothesis);
+        if(randomStrategy){
+          bestGuest = guessRandom(remainingHypothesis);
+        }
+        if(entropyNegative){
+          bestGuest = guessLessEntropy(remainingHypothesis);
+        }
 
-        tmp = submitHypothesis(noDisplay);
-        console.log('tmp : ' + tmp);
-        
+        if(entropyConsistent) {
+          bestGuest = consistentGuessGreedyEntropy(remainingHypothesis);
+        }
+
+        if(entropyConsistent) {
+          bestGuest = guessGreedyEntropy(remainingHypothesis);
+        }
+
+        tmp = submitHypothesis(noDisplay);       
 
         num_bulls = Math.floor(tmp/10);
         num_cows = tmp % 10;
@@ -172,7 +222,9 @@
 
       <br>
       <div align="center">
-         <font size="+3" color="#0000dd">Testing asking policies</font>
+         <font size="+3" color="#0000dd">Testing asking policies </font>
+         <br>
+         <font size ="+1" > Testing strategies of http://www.cim.mcgill.ca/~dudek/417/Resources/TellexDialogRss2012.pdf</font>
       </div>
       <br>    
       <div id = "main_table">   
@@ -426,7 +478,7 @@
                                 </td>
                              </TR>
                              <TR>
-                                <TD><INPUT TYPE="button" ID="Btn1" OnClick="initGame()" VALUE="Generate Random Code"  NAME="Generate Random Code"></TD>
+                                <TD><INPUT TYPE="button" ID="Btn1" OnClick="initGame()" VALUE="Reset"  NAME="Reset"></TD>
                              </tr>
 
                               <TR>
@@ -436,6 +488,25 @@
                              <TR>
                                 <TD><INPUT TYPE="button" ID="Btn2" OnClick="solve()" VALUE="Benchmark"  NAME="Benchmark"></TD>
                              </tr>
+                              <form>
+    <div class="mx-button">
+        <input type="radio" name="mx" id="button1" OnClick ="setStrategy(1)"checked>
+        <label for="button1" unselectable>Random Guess</label>
+    </div>
+    <div class="mx-button">
+        <input type="radio" name="mx" id="button2" OnClick ="setStrategy(2)" >
+        <label for="button2" unselectable>Entropy Guess</label>
+    </div>
+    <div class="mx-button">
+        <input type="radio" name="mx" id="button3" OnClick ="setStrategy(3)">
+        <label for="button3" unselectable>Entropy Consistent</label>
+    </div>
+    <div class="mx-button">
+        <input type="radio" name="mx" id="button4" OnClick ="setStrategy(4)">
+        <label for="button4" unselectable> Negative Entropy</label>
+    </div>
+</form>
+                              </div>
                           </TABLE>
                        </form>
                     </td>
@@ -455,5 +526,7 @@
          </td>
       </Table>
       <IMG SRC="images/color_hole.gif" width="0" height="0" alt="">
+        <br>
+         <font size ="+1" > css and images borrowed from http://www.web-games-online.com/mastermind/</font>
    </BODY>
 </HTML>
