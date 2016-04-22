@@ -1,0 +1,459 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+   <HEAD>
+      <TITLE>Play Mastermind Game Online</TITLE>
+      <meta content="text/html; charset=utf-8" http-equiv="content-type">
+      <link rel="stylesheet" type="text/css" href="css/default.css">
+      <link rel="stylesheet" type="text/css" href="css/mm.css">
+      <script src="http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"></script>
+      <script src="helper.js"></script>
+
+      <script type="text/javascript">
+
+
+      ibull = new Image();  
+      ibull.src = "images/bull.gif";
+
+      icow = new Image();  
+      icow.src = "images/cow.gif";
+
+      var results = [];
+      var meaning = [0,0,0,0];
+      var bestGuest = [0,0,0,0];
+      var num_bulls = 0;
+      var num_cows = 0;
+      var currentRow = 9;
+      var tmp = 0;
+      var source;
+      var destination;
+      var copy;
+      var entropy = [];
+      var tries = [];
+
+      window.onload = function () {
+        source = document.getElementById('main_table');
+        destination = document.getElementById('main_table');
+        copy = source.cloneNode(true);
+        copy.setAttribute('id', 'main_table');
+        
+      };
+      
+
+
+      function initGame(){
+        currentRow = 9;
+        destination.innerHTML = copy.innerHTML;
+        init_meaning();
+        init_hypothesis();
+        remainingHypothesis = hypothesis;
+        
+      }
+
+      function solve() {
+      initGame();
+      var j = 1;
+      var k = 1;
+        for(var i = 0; i < 200; i++) {
+
+          while(proceed(true) == 0) {
+            j++;
+            k++;
+            console.log(j);
+          }
+          tries.push(k);
+          k = 0;
+          initGame();
+        }
+
+        console.log("To solve the game 100 times, it took : " + j + "guesses");
+        console.log("With an average of " + computeAverage(tries));
+        console.log("A variance of : " + computeVariance(tries, computeAverage(tries)));
+        console.log("Queries have : " + computeAverage(entropy) + " entropy on average.");
+        console.log("And a variance of : " + computeVariance(entropy, computeAverage(entropy)));
+        //console.log(tries);
+      }
+
+
+      function proceed(noDisplay) {
+
+        bestGuest = guessLessEntropy(remainingHypothesis);
+
+        tmp = submitHypothesis(noDisplay);
+        console.log('tmp : ' + tmp);
+        
+
+        num_bulls = Math.floor(tmp/10);
+        num_cows = tmp % 10;
+        if(!noDisplay) {PutBullsAndCows()};
+
+        currentRow--;
+        remainingHypothesis = getPartition(bestGuest, remainingHypothesis)[tmp];
+        if(tmp == 40) return 1;
+        return 0;
+      }
+
+
+      function guessRandom(remainingHypothesis) {
+        var rand = Math.floor(Math.random() * remainingHypothesis.length);
+        var tmp_entropy = getEntropy(getPartition(remainingHypothesis[rand],remainingHypothesis));
+        entropy.push(tmp_entropy);
+        return remainingHypothesis[rand];
+      }
+
+
+
+      function submitHypothesis(noDisplay) {
+
+          var tmp_bulls = 0;
+          var tmp_cows = 0;
+        
+          var tmp_query = [];
+          var tmp_sample = [];
+
+          for(var i = 0; i < 4; i++) {
+            tmp_query[i] = bestGuest[i];
+            tmp_sample[i] = meaning[i];
+            if(!noDisplay) {document.getElementById(currentRow * 10 + i).src = './images/color_' + bestGuest[i] + '.gif';}
+          }
+
+          for(var i = 0; i < 4; i++) {
+            if(tmp_query[i] == tmp_sample[i]) {
+              tmp_bulls++;
+              tmp_query[i] = -1;
+              tmp_sample[i] = -2;
+            }
+          }
+
+          for(var i = 0; i < 4; i++) {
+            for(var j = 0; j < 4; j++) {
+              if(tmp_query[i] == tmp_sample[j]) {
+                tmp_cows++;
+                tmp_query[i] = -1;
+                tmp_sample[j] = -2;
+              }
+            }
+          }
+
+      return 10 * tmp_bulls + tmp_cows;
+      }
+
+
+      function PutBullsAndCows ()
+        {
+
+             for (i=0; i<num_bulls; i++)
+             {
+               img_name = "bc_img" + ((40*currentRow)+i);
+               document[img_name].src = ibull.src;
+             }
+
+             for (i=num_bulls; i<num_bulls+num_cows; i++)
+             {
+               img_name = "bc_img" + ((40*currentRow)+i);
+               document[img_name].src = icow.src;
+             }
+
+      }
+
+      </script>
+
+
+
+
+
+
+
+   </HEAD>
+   <BODY>
+
+
+
+
+
+      <br>
+      <div align="center">
+         <font size="+3" color="#0000dd">Testing asking policies</font>
+      </div>
+      <br>    
+      <div id = "main_table">   
+        <Table align="center">
+           <td  BGCOLOR="#ddeecc">
+           </td>
+           <td Style = "padding-left:120px;padding-right:120px;">
+              <div id="Cur1"></div>
+              <div id="Cur2"></div>
+              <div id="Cur3"></div>
+              <div id="Cur4"></div>
+              <div id="Cur5"></div>
+              <div id="Cur6"></div>
+              <div id="Cur7"></div>
+              <div id="Cur8"></div>
+              <INPUT TYPE= "hidden" ID= "NumColors" VALUE=8> 
+              <INPUT TYPE= "hidden" ID= "CodeLength" VALUE=4> 
+              <INPUT TYPE= "hidden" ID= "NumAttempts" VALUE=10> 
+              <INPUT TYPE= "hidden" ID= "AllowDup" VALUE=true> 
+              <table align="center"
+                 cellspacing="0" 
+                 cellpadding="0" 
+                 BGCOLOR="#cd7363"
+                 Style = "border-left:6px brown solid;border-top:8px brown solid;
+                 border-right:6px brown solid;border-bottom:8px brown solid;"
+                 ID="GameTable">
+                 <tr>
+                    <td colspan="2">
+                       <table cellspacing="0" cellpadding="0">
+                          <tr bgcolor="#ad7363">
+                             <td><A><IMG ID = "c0" SRC="images/qm.gif" Name="sel0" WIDTH="36" HEIGHT="36" BORDER="0" ALT=""></A></td>
+                             <td><A><IMG ID = "c1"SRC="images/qm.gif" Name="sel1" WIDTH="36" HEIGHT="36" BORDER="0" ALT=""></A></td>
+                             <td><A><IMG ID = "c2" SRC="images/qm.gif" Name="sel2" WIDTH="36" HEIGHT="36" BORDER="0" ALT=""></A></td>
+                             <td><A><IMG ID = "c3" SRC="images/qm.gif" Name="sel3" WIDTH="36" HEIGHT="36" BORDER="0" ALT=""></A></td>
+                          </tr>
+                          <tr  Id="Row1" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img40" WIDTH="36" HEIGHT="36" BORDER="0" Id ="10" ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img41" WIDTH="36" HEIGHT="36" BORDER="0" Id ="11" ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img42" WIDTH="36" HEIGHT="36" BORDER="0" Id ="12" ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img43" WIDTH="36" HEIGHT="36" BORDER="0" Id ="13" ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img40" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img41" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img42" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img43" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn1" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+                          <tr  Id="Row2" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img80" WIDTH="36" HEIGHT="36" BORDER="0" Id ="20"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img81" WIDTH="36" HEIGHT="36" BORDER="0" Id ="21"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img82" WIDTH="36" HEIGHT="36" BORDER="0" Id ="22"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img83" WIDTH="36" HEIGHT="36" BORDER="0" Id ="23"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img80" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img81" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img82" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img83" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn2" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+                          <tr  Id="Row3" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img120" WIDTH="36" HEIGHT="36" BORDER="0" Id ="30"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img121" WIDTH="36" HEIGHT="36" BORDER="0" Id ="31"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img122" WIDTH="36" HEIGHT="36" BORDER="0" Id ="32"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img123" WIDTH="36" HEIGHT="36" BORDER="0" Id ="33"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img120" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img121" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img122" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img123" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn3" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+                          <tr  Id="Row4" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img160" WIDTH="36" HEIGHT="36" BORDER="0" Id ="40"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img161" WIDTH="36" HEIGHT="36" BORDER="0" Id ="41"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img162" WIDTH="36" HEIGHT="36" BORDER="0" Id ="42"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img163" WIDTH="36" HEIGHT="36" BORDER="0" Id ="43"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img160" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img161" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img162" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img163" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn4" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+                          <tr  Id="Row5" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img200" WIDTH="36" HEIGHT="36" BORDER="0" Id ="50"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img201" WIDTH="36" HEIGHT="36" BORDER="0" Id ="51"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img202" WIDTH="36" HEIGHT="36" BORDER="0" Id ="52"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img203" WIDTH="36" HEIGHT="36" BORDER="0" Id ="53"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img200" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img201" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img202" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img203" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn5" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+                          <tr  Id="Row6" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img240" WIDTH="36" HEIGHT="36" BORDER="0" Id ="60"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img241" WIDTH="36" HEIGHT="36" BORDER="0" Id ="61"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img242" WIDTH="36" HEIGHT="36" BORDER="0" Id ="62"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img243" WIDTH="36" HEIGHT="36" BORDER="0" Id ="63"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img240" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img241" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img242" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img243" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn6" OnClick="submit()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+
+                          <tr  Id="Row7" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img280" WIDTH="36" HEIGHT="36" BORDER="0" Id ="70"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img281" WIDTH="36" HEIGHT="36" BORDER="0" Id ="71"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img282" WIDTH="36" HEIGHT="36" BORDER="0" Id ="72"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img283" WIDTH="36" HEIGHT="36" BORDER="0" Id ="73"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img280" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img281" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img282" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img283" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn5" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+
+                          <tr  Id="Row8" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img320" WIDTH="36" HEIGHT="36" BORDER="0" Id ="80"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img321" WIDTH="36" HEIGHT="36" BORDER="0" Id ="81"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img322" WIDTH="36" HEIGHT="36" BORDER="0" Id ="82"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img323" WIDTH="36" HEIGHT="36" BORDER="0" Id ="83"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img320" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img321" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img322" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img323" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn5" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+
+                          <tr  Id="Row9" bgcolor="#ad7363">
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img360" WIDTH="36" HEIGHT="36" BORDER="0" Id ="90"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img361" WIDTH="36" HEIGHT="36" BORDER="0" Id ="91"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img362" WIDTH="36" HEIGHT="36" BORDER="0" Id ="92"  ALT=""></A></td>
+                             <td><A><IMG SRC="images/color_hole.gif" Name="img363" WIDTH="36" HEIGHT="36" BORDER="0" Id ="93"  ALT=""></A></td>
+                             <td>
+                                <table cellspacing="0" cellpadding="0">
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img360" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img361" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                   <tr>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img362" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                      <td><IMG SRC="images/color_hole.gif" Name="bc_img363" WIDTH="14" HEIGHT="14" BORDER="0" ALT=""></td>
+                                   </tr>
+                                </table>
+                             </td>
+                             <TD><INPUT TYPE="button" ID="Btn5" OnClick="CheckRow()" VALUE="Check" style='visibility:hidden;' NAME="Check"></TD>
+                          </tr>
+                          
+                       </table>
+                    </td>
+                 </tr>
+                 <tr>
+                    <td>&nbsp;</td>
+                 </tr>
+                 <tr>
+                    <td>
+                       <table cellspacing="0" cellpadding="0">
+                          <tr>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_1.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('1')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_2.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('2')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_3.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('3')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_4.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('4')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                          </tr>
+                          <tr>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_5.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('5')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_6.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('6')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_7.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('7')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                             <td bgcolor='#ad7363'><A><IMG SRC="images/color_0.gif" WIDTH="32" HEIGHT="32" BORDER="0" OnClick="MouseSelection('8')" onMouseOver="this.style.backgroundColor = '#cd9383';" onMouseOut="this.style.backgroundColor = '#ad7363';" ALT=""></A></td>
+                          </tr>
+                       </table>
+                    </td>
+                 </tr>
+                 <tr>
+                    <td align="center">
+                       <form METHOD=POST ACTION="index.php">
+                          <table cellspacing="0" cellpadding="0">
+                             <tr>
+                                <td>
+                                   <div class="ClassForm">
+                                      <option >
+                                      <option >
+                                      </select>
+                                   </div>
+                                </td>
+                             </tr>
+                             <tr>
+                                <td>
+                                   <div class="ClassForm"></div>
+                                </td>
+                             </TR>
+                             <TR>
+                                <TD><INPUT TYPE="button" ID="Btn1" OnClick="initGame()" VALUE="Generate Random Code"  NAME="Generate Random Code"></TD>
+                             </tr>
+
+                              <TR>
+                                <TD><INPUT TYPE="button" ID="Btn2" OnClick="proceed()" VALUE="Guess the Code"  NAME="Guess the Code"></TD>
+                             </tr>
+
+                             <TR>
+                                <TD><INPUT TYPE="button" ID="Btn2" OnClick="solve()" VALUE="Benchmark"  NAME="Benchmark"></TD>
+                             </tr>
+                          </TABLE>
+                       </form>
+                    </td>
+                 </tr>
+                 <!--TR>
+                    <TD align="center" colspan="4"> 
+                      <INPUT TYPE="text"
+                             ID="StatusId"
+                             NAME="GameStatus"
+                             Size="24">
+                    </TD> 
+                    </tr-->
+              </table>
+            </div>
+         </td>
+         <td  BGCOLOR="#ddeecc">
+         </td>
+      </Table>
+      <IMG SRC="images/color_hole.gif" width="0" height="0" alt="">
+   </BODY>
+</HTML>
