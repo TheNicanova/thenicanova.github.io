@@ -1,0 +1,32 @@
+
+body 
+{
+  margin-right: 0;
+  margin-top: 0;
+  margin-left: 0;
+  margin-width: 0;
+  margin-height: 0;
+  background-color: #e7f7e7;
+}
+
+.rulesHeaderTextBold
+{
+  color: #0000ff;
+  font: bold "Trebuchet MS",sans-serif;
+  font-size : 15px;
+}
+
+.rulesTextBold
+{
+  color: #002255;
+  font: bold "Trebuchet MS",sans-serif;
+  font-size : 14px;
+}
+
+.headerTextBold
+{
+  color: #8800ff;
+  font: bold "Trebuchet MS",sans-serif;
+  font-size : 25px;
+}
+
